@@ -6,8 +6,7 @@ from typing import List
 
 import Ice
 
-from .authentication import Authentication
-
+import authentication 
 
 class AuthenticationApp(Ice.Application):
     """Implementation of the Ice.Application for the Authentication service."""
@@ -17,7 +16,7 @@ class AuthenticationApp(Ice.Application):
         adapter = self.communicator().createObjectAdapter("AuthenticationAdapter")
         adapter.activate()
 
-        servant = Authentication()
+        servant = authentication.Authentication()
         servant_proxy = adapter.addWithUUID(servant)
 
         logging.info("Proxy: %s", servant_proxy)
@@ -31,4 +30,7 @@ class AuthenticationApp(Ice.Application):
 def main():
     """Handle the icedrive-authentication program."""
     app = AuthenticationApp()
-    return app.main(sys.argv)
+    return app.main(sys.argv, "config/authentication.config")
+
+
+main()
