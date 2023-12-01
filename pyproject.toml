@@ -29,4 +29,6 @@ linters = ["black", "ruff", "pydocstyle"]
 "Homepage" = "https://github.com/YOURUSERNAME/YOURREPOSITORY"
 
 [project.scripts]
-icedrive-authentication = "icedrive_authentication.app:main"
+icedrive-authentication-server = "icedrive_authentication.command_lines_handlers:server"
+icedrive-authentication-client = "icedrive_authentication.command_lines_handlers:client"
+
