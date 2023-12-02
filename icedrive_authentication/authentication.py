@@ -28,9 +28,9 @@ class User(IceDrive.User):
         """Renew the authentication for 1 more period of time."""
         #Comprobamos que el usuario siga en el txt
         if not self.persistencia.verificar_usuario_en_archivo(self.username, self.password):
-            #raise IceDrive.Unauthorized
+            raise IceDrive.Unauthorized
         
-            self.creation_time += 120 
+        self.creation_time += 120 
 
 
 class Authentication(IceDrive.Authentication):
