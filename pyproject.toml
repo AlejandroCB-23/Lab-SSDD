@@ -26,7 +26,7 @@ tests = ["pytest"]
 linters = ["black", "ruff", "pydocstyle"]
 
 [project.urls]
-"Homepage" = "https://github.com/YOURUSERNAME/YOURREPOSITORY"
+"Homepage" = "https://github.com/AlejandroCB-23/Lab-SSDD.git"
 
 [project.scripts]
 icedrive-authentication-server = "icedrive_authentication.command_lines_handlers:server"
