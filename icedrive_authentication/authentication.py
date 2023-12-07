@@ -21,18 +21,22 @@ class User(IceDrive.User):
 
     def isAlive(self, current: Ice.Current = None) -> bool:
         """Check if the authentication is still valid or not."""
+
+        if not self.persistencia.verificar_usuario_en_archivo(self.username, self.password):
+            return False
+        
         return time.time() - self.creation_time < self.lifetime
  
 
     def refresh(self, current: Ice.Current = None) -> None:
         """Renew the authentication for 1 more period of time."""
         
-        #Comprobamos que el usuario siga en el txt
-        if not self.persistencia.verificar_usuario_en_archivo(self.username):
+        #Comprobamos que el usuario exista en el txt
+        if not self.persistencia.verificar_usuario_en_archivo(self.username, self.password):
             raise IceDrive.UserNotExist
         
-        #Comprobamos que la contraseña sea correcta
-        if not self.persistencia.verificar_usuario_en_archivo(self.username, self.password):
+        #Si el usuario no esta vivo lanzamos la excepcion Unauthorized
+        if not self.isAlive():
             raise IceDrive.Unauthorized
         
         self.creation_time += 120 

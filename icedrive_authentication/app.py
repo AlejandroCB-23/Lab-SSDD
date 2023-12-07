@@ -48,6 +48,8 @@ class ClientApp(Ice.Application):
         user = authentication.newUser("Alejandro", "123")
         logging.info("User: %s", user)
 
+        user.getUsername()
+
         user2 = authentication.newUser("Alejandro2", "123")
         logging.info("User: %s", user2)
 
@@ -109,6 +111,7 @@ class ClientApp(Ice.Application):
 
         authentication.removeUser("Alejandro3", "123")
         logging.info("El usuario3 fue eliminado")
+
         
         #Comprobamos que no esta en el servicio
         if not authentication.verifyUser(user):
