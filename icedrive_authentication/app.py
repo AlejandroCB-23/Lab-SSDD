@@ -50,41 +50,54 @@ class ClientApp(Ice.Application):
 
         user2 = authentication.newUser("Alejandro2", "123")
         logging.info("User: %s", user2)
+
+        user3 = authentication.newUser("Alejandro3", "123")
+        logging.info("User: %s", user3)
         
         #Coprobamos que esta vivo a los 60 segundos 
         time.sleep(60)
         if user.isAlive():
             logging.info("El usuario esta vivo")
+        
+        if user2.isAlive():
+            logging.info("El usuario2 esta vivo")
+
+        if user3.isAlive():
+            logging.info("El usuario3 esta vivo")
+
+        #Le añadimos al usuario 3 120 segundos mas de vida
+        user3.refresh()
 
         #Comprobamos que esta vivo pasado los 120 segundos
         time.sleep(61)
         if not user.isAlive():
             logging.info("El usuario no esta vivo")
+        
+        if not user2.isAlive():
+            logging.info("El usuario2 no esta vivo")
 
-        #Una vez comprobado que no esta vivo, vamos a refrescarlo y comprobamos que este vico
-        user.refresh()
-        time.sleep(60)
-        if user.isAlive():
-            logging.info("El usuario esta vivo 2")
+        if user3.isAlive():
+            logging.info("El usuario3 esta vivo")
+        
+        time.sleep(181)
 
-        #Comprobamos que no esta vivo pasado los 120 segundos
-        time.sleep(61)
-        if not user.isAlive():
-            logging.info("El usuario no esta vivo 2")
+        if not user3.isAlive():
+            logging.info("El usuario3 no esta vivo")
 
         #Ahora vamos a hacer login
-        user = authentication.login("Alejandro", "123")
-        logging.info("User: %s", user)
+        user4 = authentication.login("Alejandro", "123")
+        logging.info("User: %s", user4)
         logging.info("Usuario logeado")
 
-        if user.isAlive():
-            logging.info("El usuario esta vivo 3")
+        if user4.isAlive():
+            logging.info("El usuario esta vivo 1 (logueado)")
         time.sleep(121)
-        if not user.isAlive():
-            logging.info("El usuario no esta vivo 3")
+        
+        if not user3.isAlive():
+            logging.info("El usuario no esta vivo 1 (logueado)")
 
-        if authentication.verifyUser(user):
-            logging.info("El usuario fue verificado")
+        if authentication.verifyUser(user4):
+            logging.info("El usuario fue verificado 1 (logueado)")
 
 
         #Eliminamos el usuario
@@ -93,7 +106,13 @@ class ClientApp(Ice.Application):
 
         authentication.removeUser("Alejandro2", "123")
         logging.info("El usuario2 fue eliminado")
+
+        authentication.removeUser("Alejandro3", "123")
+        logging.info("El usuario3 fue eliminado")
         
+        #Comprobamos que no esta en el servicio
+        if not authentication.verifyUser(user):
+            logging.info("El usuario no fue verificado 1")
 
 
         

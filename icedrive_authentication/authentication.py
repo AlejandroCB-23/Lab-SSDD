@@ -26,11 +26,12 @@ class User(IceDrive.User):
 
     def refresh(self, current: Ice.Current = None) -> None:
         """Renew the authentication for 1 more period of time."""
+        
         #Comprobamos que el usuario siga en el txt
-
         if not self.persistencia.verificar_usuario_en_archivo(self.username):
             raise IceDrive.UserNotExist
         
+        #Comprobamos que la contraseña sea correcta
         if not self.persistencia.verificar_usuario_en_archivo(self.username, self.password):
             raise IceDrive.Unauthorized
         
@@ -42,6 +43,7 @@ class Authentication(IceDrive.Authentication):
 
     def __init__(self):
         self.persistencia = AdministracionPersistencia()
+        self.diccionario_proxy = {}
 
 
     def login(
@@ -49,33 +51,20 @@ class Authentication(IceDrive.Authentication):
     ) -> IceDrive.UserPrx:
         """Authenticate an user by username and password and return its User. Comprobando que esten en el txt tambien"""
             
-        # Verificar si el usuario existe en el archivo y validar la contraseña
+        # Verificar si el usuario existe en el archivo y validar la contraseña. En caso de que no este, lanzamos la excepcion Unauthorized
         if not self.persistencia.verificar_usuario_en_archivo(username, password):
-            raise IceDrive.UserNotFound
-
-        try:
-            # Verificar si el usuario existe en el archivo y obtener el UUID
-            uuid = self.persistencia.obtener_uuid_de_archivo(username, password)
-
-            if uuid is None:
-                raise IceDrive.Unauthorized
-
-            # Crear la identidad con el UUID
-            usuario_identidad = Ice.Identity(uuid, "")
-
-            # Intentar eliminar el usuario
-            current.adapter.remove(usuario_identidad)
-
-        except Ice.ObjectNotExistException:
-            raise IceDrive.UserNotFound
+            raise IceDrive.Unauthorized
 
         # Crear un nuevo proxy de usuario
         usuario = User(username, password)
-        usuario_proxy = IceDrive.UserPrx.uncheckedCast( current.adapter.addWithUUID(usuario)).ice_timeout(120)  # Establecer un tiempo de espera de 2 minutos
 
-        # Guardar el UUID del usuario en el archivo
-        self.persistencia.actualizar_uuid_en_archivo(username, password, usuario_proxy.ice_getIdentity().name)
+        #Creamos el proxy del usuario y lo añadimos al adapter
+        usuario_proxy = IceDrive.UserPrx.uncheckedCast( current.adapter.addWithUUID(usuario)).ice_timeout(120)
 
+        #Guardar el proxy en el diccionario
+        self.diccionario_proxy.setdefault(username, []).append(usuario_proxy)
+
+        # Devolver el proxy del usuario
         return usuario_proxy
 
 
@@ -85,17 +74,23 @@ class Authentication(IceDrive.Authentication):
     ) -> IceDrive.UserPrx:
         """Create an user with username and the given password."""
         
+        #Verificamos que el usuario no este en el txt y si este se encuentra en el, lanzamos la excepcion UserAlreadyExists
         if self.persistencia.verificar_usuario_en_archivo(username):
                 raise IceDrive.UserAlreadyExists
 
         #Creamos el usuario con el nombre y la contraseña
         usuario = User(username, password)
+
         #Creamos el proxy del usuario y lo añadiomos al adapter
-        usuario_proxy = IceDrive.UserPrx.uncheckedCast(current.adapter.addWithUUID(usuario).ice_timeout(120).ice_twoway().ice_secure(False))
+        usuario_proxy = IceDrive.UserPrx.uncheckedCast(current.adapter.addWithUUID(usuario).ice_timeout(120))
 
-        # Guardar el UUID del usuario en el archivo
-        self.persistencia.guardar_usuario_en_archivo(username, password, usuario_proxy.ice_getIdentity().name)
+        #Guardamos el proxy en el diccionario
+        self.diccionario_proxy.setdefault(username, []).append(usuario_proxy)
 
+        # Guardar el usuario en el archivo
+        self.persistencia.guardar_usuario_en_archivo(username, password)
+
+        # Devolver el proxy del usuario
         return usuario_proxy
 
 
@@ -104,35 +99,45 @@ class Authentication(IceDrive.Authentication):
     ) -> None:
         """Remove the user "username" if the "password" is correct."""
 
-        #Verificamos que la contraseña y el nombre son correctos
+        #Verificamos que la contraseña y el nombre son correctos. Si no lo son lanzamos la excepcion Unauthorized 
         if not self.persistencia.verificar_usuario_en_archivo(username, password):
             raise IceDrive.Unauthorized
 
+
         try:
-            # Obtenemos los UUID
-            uuid = self.persistencia.obtener_uuid_de_archivo(username, password)
+            #Verificar si el usuario tiene proxies en el diccionario, en caso de que no tenga, lanzamos la excepcion UserNotExist
+            if username in self.diccionario_proxy:
+                
+                #Recorremos la lista de proxies asoiada al usuario
+                for usuario_proxy in self.diccionario_proxy[username]:
 
-            if uuid is None:
-                raise IceDrive.Unauthorized
+                    #Mostramos el proxy que vamos a eliminar
+                    print("Eliminando el proxy: ", usuario_proxy)
 
-            # Crear la identidad con el UUID
-            usuario_identidad = Ice.Identity(uuid, "")
+                    #Eliminamos el proxy del adapter
+                    current.adapter.remove(usuario_proxy.ice_getIdentity())
 
-            # Intentar eliminar el usuario
-            current.adapter.remove(usuario_identidad)
-            self.persistencia.eliminar_usuario_del_archivo(username)
-
+                #Limpiamos la lista de proxies del usuario
+                del self.diccionario_proxy[username]
+            
+            #Eliminar el usuario del archivo
+            self.persistencia.eliminar_usuario_del_archivo(username, password)
+        
         except Ice.ObjectNotExistException:
-            raise IceDrive.UserNotFound
-
-
+            raise IceDrive.UserNotExist
+                
 
     def verifyUser(self, user: IceDrive.UserPrx, current: Ice.Current = None) -> bool:
         """Check if the user belongs to this service.
         Don't check anything related to its authentication state or anything else."""
 
+        #Obtenemos el uuid del usuario
         uuid = user.ice_getIdentity().name
+
+        #Obtenemos la identidad del usuario
         usuario_identidad = Ice.Identity(uuid, "")
+
+        #Obtenemos el objeto del usuario a traves del uuid
         objeto_usuario = current.adapter.find(usuario_identidad)
         
         # Devolver True si el objeto del usuario está presente, False en caso contrario

@@ -13,11 +13,14 @@ One of the first things that you need to setup when you clone this branch is to 
 - Projects URL humepage
 
 
-A la hora de implementar la practica he tenido en cuenta que cada usuario solo puede tener un proxy activo del mismo, de este modo simularia que si tu inicias sesión en un ordenador a la hora de hacerlo en otro ordenador este cerraria la conexión con el primero y se conectaría al segundo. 
 
-Para lograr esto hay que tener en cuenta que cada vez que un usuario hace login(), significa que se inicia una nueva conexión y por tanto se crea un nuevo proxy, por tanto en esta función habria que sacar el nuevo UUID del proxy y eliminar el proxy antiguo.
+Contenido del programa:
 
 La implementación consise en un archivo con las correspondientes clases Usuario y Autentificación y una tercera añadida por mi "administracion_persistencia" esta clase permite manejar todo aquello que tiene que ver con leer del archivo de persistencia, borrar o actualizarlo.
+
+La clase usuario consiste en 3 métodos, en el método getUsarname(), consiste en devolver el nombre correspondiente al usuario, el método isAluive(), no proporcionara un True o un False dependiendo de si el usuario sigue vivo o no y el método refresh() comprobara primero que el usuario exista en el archivo de persistencia, posteriormente comprobara que la contraseña sea la correcta y por último si todo lo anterior es correcto le sumara un total de 120 segundos de vida al proxy (2 minutos).
+
+La clase Autentificación consiste en 4 metodos, el método login() comprobará que cada vez que se acceda a él, el usuario se encuentra en la persistencia del sistema, para posteriormente crear un nuevo proxy de dicho usuario simulando que este usaurio se puede haber logeado en diferentes dispositivos al mismo tiempo, una vez creado el proxy se añadirá al adaptador, el método newUser() consiste en comprobar que el usuario no se encuentre en la persistencia del sistema para de esta manera poder añadirlo, ya que un usuario solo puede estar 1 vez en la persistencia, una vez añadido se crea su objetos proxy y se devuelve, el método removeUser() consiste en comprobar que el usuario y la contraseña sean correctos y una vez comprobados eliminar todos los proxies asociados a ese usuario y posteriormente eliminar dicho usuario de la persistencia y por último el metodo verifyUser que comprobará si el usuario se encuentra en el adaptador o por el contrario es un proxy no valido en el sistema 
 
 Luego tenemos el archivo app en el cual se encuentra la clase Servidor y Clase Cliente que sirve para poder probar que funciona el programa 
 
