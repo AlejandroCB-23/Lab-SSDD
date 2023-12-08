@@ -115,9 +115,6 @@ class Authentication(IceDrive.Authentication):
                 #Recorremos la lista de proxies asoiada al usuario
                 for usuario_proxy in self.diccionario_proxy[username]:
 
-                    #Mostramos el proxy que vamos a eliminar
-                    print("Eliminando el proxy: ", usuario_proxy)
-
                     #Eliminamos el proxy del adapter
                     current.adapter.remove(usuario_proxy.ice_getIdentity())
 

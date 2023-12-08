@@ -48,7 +48,8 @@ class ClientApp(Ice.Application):
         user = authentication.newUser("Alejandro", "123")
         logging.info("User: %s", user)
 
-        user.getUsername()
+        nombre = user.getUsername()
+        logging.info("Nombre: %s", nombre)
 
         user2 = authentication.newUser("Alejandro2", "123")
         logging.info("User: %s", user2)
