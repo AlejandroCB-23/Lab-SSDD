@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "icedrive-authentication"
 version = "0.0.1"
 authors = [
-  { name="Alejandro Cañas Borreguero", email="youremailaddress@uclm.es" },
+  { name="Alejandro Cañas Borreguero", email="Alejandro.Canas1@alu.uclm.es" },
 ]
 description = "Implementation of IceDrive Authentication service"
 readme = "README.md"
