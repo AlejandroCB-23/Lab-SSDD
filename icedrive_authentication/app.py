@@ -7,27 +7,74 @@ import time
 
 import Ice
 import IceDrive
+import IceStorm
+import threading
 
 #import authentication
 from .authentication import Authentication
+from .delayed_response import AuthenticationQuery, AuthenticationQueryResponse
+from .discovery import Discovery
 
 class AuthenticationApp(Ice.Application):
     """Implementation of the Ice.Application for the Authentication service."""
 
+
+
     def run(self, args: List[str]) -> int:
         """Execute the code for the AuthentacionApp class."""
+        properties = self.communicator().getProperties()
+        topic_name = properties.getProperty("Discovery.Topic")
+        topic_manager = IceStorm.TopicManagerPrx.checkedCast(
+            self.communicator().propertyToProxy("IceStorm.TopicManager.Proxy")
+        )
+
+        try :
+            topic = topic_manager.retrieve(topic_name)
+        except IceStorm.NoSuchTopic:
+            topic = topic_manager.create(topic_name)
+
+        #Creamos el discovery, lo añadimos al adaptador y lo publicamos
+        print("Creamos el discovery")
+        discovery_pub = IceDrive.DiscoveryPrx.uncheckedCast(topic.getPublisher())
+        print("Publisher: " + str(discovery_pub))
+
+        print("Añadimos el discovery al adaptador")
+        servant = Discovery()
         adapter = self.communicator().createObjectAdapter("AuthenticationAdapter")
         adapter.activate()
+        servant_proxy = IceDrive.DiscoveryPrx.checkedCast(adapter.addWithUUID(servant))
+        print("Discovery: " + str(servant_proxy))
 
-        servant = Authentication()
-        servant_proxy = adapter.addWithUUID(servant)
+        #Nos subscribimos al topic, obtenemos los subscritores y esperamos a que se conecten
+        print("Nos subscribimos al topic")
+        topic.subscribeAndGetPublisher({}, servant_proxy)
 
-        logging.info("Proxy: %s", servant_proxy)
+        
+        announce_thread = threading.Thread(target=self.run_announce_periodically, args=(adapter, discovery_pub))
+        announce_thread.start()
 
-        self.shutdownOnInterrupt()
-        self.communicator().waitForShutdown()
+        #logging.info("Proxy: %s", autehentication_service )
+
+        try:
+            self.shutdownOnInterrupt()
+            self.communicator().waitForShutdown()
+        finally:
+            # Asegúrate de detener el hilo al finalizar
+            announce_thread.join()
+
 
         return 0
+     
+
+    def run_announce_periodically(self, adapter, discovery_pub):
+        authentication_service = Authentication()
+        authentication_prx = IceDrive.AuthenticationPrx.checkedCast(adapter.addWithUUID(authentication_service))
+    
+        while not self.communicator().isShutdown():
+            time.sleep(5)
+            print("Me anuncio en el topic")
+            discovery_pub.announceAuthentication(authentication_prx)
+            
 
 
 
@@ -82,7 +129,7 @@ class ClientApp(Ice.Application):
         if user3.isAlive():
             logging.info("El usuario3 esta vivo")
         
-        time.sleep(181)
+        time.sleep(121)
 
         if not user3.isAlive():
             logging.info("El usuario3 no esta vivo")
