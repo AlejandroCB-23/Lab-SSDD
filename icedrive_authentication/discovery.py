@@ -19,19 +19,23 @@ class Discovery(IceDrive.Discovery):
 
     def announceAuthentication(self, prx: IceDrive.AuthenticationPrx, current: Ice.Current = None) -> None:
         """Receive an Authentication service announcement."""
-        self.lista_authentication.append(prx)
-        #logging.info("SERVICIO Authentication: %s", prx)
+        #Si el proxy no esta en la lista lo añadimos
+        if prx not in self.lista_authentication:
+            self.lista_authentication.append(prx)
+        logging.info("SERVICIO Authentication: %s", prx)
 
 
     def announceDirectoryService(self, prx: IceDrive.DirectoryServicePrx, current: Ice.Current = None) -> None:
         """Receive an Directory service announcement."""
-        self.lista_directory.append(prx)
-        #logging.info("SERVICIO Directory: %s", prx)
+        if prx not in self.lista_directory:
+            self.lista_directory.append(prx)
+        logging.info("SERVICIO Directory: %s", prx)
 
     def announceBlobService(self, prx: IceDrive.BlobServicePrx, current: Ice.Current = None) -> None:
         """Receive an Blob service announcement."""
-        self.lista_blob.append(prx)
-        #logging.info("SERVICIO Blob: %s", prx)  
+        if prx not in self.lista_blob:
+            self.lista_blob.append(prx)
+        logging.info("SERVICIO Blob: %s", prx)  
 
     #Getters and removers
 

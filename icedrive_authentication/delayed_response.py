@@ -19,7 +19,9 @@ class AuthenticationQueryResponse(IceDrive.AuthenticationQueryResponse): #Respon
         "El servicio recibe la llamada al método “loginResponse” de esta interfaz con el proxy del usuario y comprueba que ese usuario este en el diccionario."
         "Si esta invoca una respuesta enviando el nombre de usuario y contraseña y adjunta un objeto User en caso de credenciales correctas o uno nulo en caso de incorrectas"
 
-        #Comprobamos que este en el servicio (Diccionario)
+        self.future.set(user)
+        current.adapter.remove(current.id)
+
 
     def userRemoved(self, current: Ice.Current = None) -> None:
         """Receive an invocation when other service instance knows the user and removed it."""
@@ -37,8 +39,7 @@ class AuthenticationQueryResponse(IceDrive.AuthenticationQueryResponse): #Respon
 
 class AuthenticationQuery(IceDrive.AuthenticationQuery): #Para que otros me ayuden
     """Query receiver."""
-    def __init__(self, instance: Authentication, persistencia: AdministracionPersistencia):
-        self.persistencia = persistencia
+    def __init__(self, instance: Authentication):
         self.instance = instance
 
     def login(self, username: str, password: str, response: IceDrive.AuthenticationQueryResponsePrx, current: Ice.Current = None) -> None:
@@ -47,6 +48,7 @@ class AuthenticationQuery(IceDrive.AuthenticationQuery): #Para que otros me ayud
 
         usuario = User(username, password)
         response.loginResponse(usuario)
+        
         
     def removeUser(self, username: str, password: str, response: IceDrive.AuthenticationQueryResponsePrx, current: Ice.Current = None) -> None:
         """Receive a query about an user to be removed."""

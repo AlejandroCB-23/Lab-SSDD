@@ -23,7 +23,11 @@ class AuthenticationApp(Ice.Application):
     def run(self, args: List[str]) -> int:
         """Execute the code for the AuthentacionApp class."""
         properties = self.communicator().getProperties()
+        properties_query = self.communicator().getProperties()
+
         topic_name = properties.getProperty("Discovery.Topic")
+        topic_query = properties_query.getProperty("Authentication.DeferredResolution.Topic")
+
         topic_manager = IceStorm.TopicManagerPrx.checkedCast(
             self.communicator().propertyToProxy("IceStorm.TopicManager.Proxy")
         )
@@ -33,27 +37,56 @@ class AuthenticationApp(Ice.Application):
         except IceStorm.NoSuchTopic:
             topic = topic_manager.create(topic_name)
 
+
+        try :
+            topic2 = topic_manager.retrieve(topic_query)
+        except IceStorm.NoSuchTopic:
+            topic2 = topic_manager.create(topic_query)
+
+       
         #Creamos el discovery, lo añadimos al adaptador y lo publicamos
         print("Creamos el discovery")
         discovery_pub = IceDrive.DiscoveryPrx.uncheckedCast(topic.getPublisher())
-        print("Publisher: " + str(discovery_pub))
+        query_pub = IceDrive.AuthenticationQueryPrx.uncheckedCast(topic2.getPublisher())
 
+        print("Publisher: " + str(discovery_pub))
+        print("Publisher: " + str(query_pub))
+
+
+   
+        
         print("Añadimos el discovery al adaptador")
-        servant = Discovery()
+
         adapter = self.communicator().createObjectAdapter("AuthenticationAdapter")
         adapter.activate()
+
+        servant = Discovery()
+        authentication_service = Authentication()
+        authentication_prx = IceDrive.AuthenticationPrx.checkedCast(adapter.addWithUUID(authentication_service))
+
+        #Hacemos el query_servant y le pasamos la instancia del servicio
+        query_servant = AuthenticationQuery(authentication_service)
+
+
+
         servant_proxy = IceDrive.DiscoveryPrx.checkedCast(adapter.addWithUUID(servant))
+        servant_proxy2 = IceDrive.AuthenticationQueryPrx.checkedCast(adapter.addWithUUID(query_servant))
         print("Discovery: " + str(servant_proxy))
+        print("Query: " + str(servant_proxy2))
 
         #Nos subscribimos al topic, obtenemos los subscritores y esperamos a que se conecten
         print("Nos subscribimos al topic")
         topic.subscribeAndGetPublisher({}, servant_proxy)
 
-        
-        announce_thread = threading.Thread(target=self.run_announce_periodically, args=(adapter, discovery_pub))
-        announce_thread.start()
+        #Nos subscribimos al topic2, obtenemos los subscritores y esperamos a que se conecten
+        print("Nos subscribimos al topic2")
+        topic2.subscribeAndGetPublisher({}, servant_proxy2)
 
-        #logging.info("Proxy: %s", autehentication_service )
+
+
+    
+        announce_thread = threading.Thread(target=self.run_announce_periodically, args=(authentication_prx, discovery_pub))
+        announce_thread.start()
 
         try:
             self.shutdownOnInterrupt()
@@ -66,15 +99,14 @@ class AuthenticationApp(Ice.Application):
         return 0
      
 
-    def run_announce_periodically(self, adapter, discovery_pub):
-        authentication_service = Authentication()
-        authentication_prx = IceDrive.AuthenticationPrx.checkedCast(adapter.addWithUUID(authentication_service))
+    def run_announce_periodically(self, authentication_prx, discovery_pub):
+
     
         while not self.communicator().isShutdown():
             time.sleep(5)
             print("Me anuncio en el topic")
             discovery_pub.announceAuthentication(authentication_prx)
-            
+
 
 
 
