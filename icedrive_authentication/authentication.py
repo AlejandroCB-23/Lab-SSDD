@@ -21,14 +21,11 @@ class User(IceDrive.User):
     def getUsername(self, current: Ice.Current = None) -> str:
         """Return the username for the User object."""
 
-        print(" Uso getUsername")
-
         return self.username
 
     def isAlive(self, current: Ice.Current = None) -> bool:
         """Check if the authentication is still valid or not."""
 
-        print(" Uso isAlive")
 
         if not self.persistencia.verificar_usuario_en_archivo(self.username, self.password):
             return False
@@ -39,7 +36,6 @@ class User(IceDrive.User):
     def refresh(self, current: Ice.Current = None) -> None:
         """Renew the authentication for 1 more period of time."""
 
-        print(" Uso Refresh")
         
         #Comprobamos que el usuario exista en el txt
         if not self.persistencia.verificar_usuario_en_archivo(self.username, self.password):
@@ -66,7 +62,6 @@ class Authentication(IceDrive.Authentication):
     ) -> IceDrive.UserPrx:
         """Authenticate an user by username and password and return its User. Comprobando que esten en el txt tambien"""
 
-        print("Usuario Login")
             
         # Verificar si el usuario existe en el archivo y validar la contraseña. En caso de que no este, lanzamos la excepcion Unauthorized
         if not self.persistencia.verificar_usuario_en_archivo(username, password):
@@ -106,7 +101,6 @@ class Authentication(IceDrive.Authentication):
     ) -> IceDrive.UserPrx:
         """Create an user with username and the given password."""
 
-        print("Nuevo usuario")
         
         #Verificamos que el usuario no este en el txt y si este se encuentra en el, lanzamos la excepcion UserAlreadyExists
         if self.persistencia.verificar_usuario_en_archivo(username):
@@ -149,7 +143,6 @@ class Authentication(IceDrive.Authentication):
     ) -> None:
         """Remove the user "username" if the "password" is correct."""
 
-        print("Eliminar usuario")
 
         #Verificamos que la contraseña y el nombre son correctos. Si no lo son lanzamos la excepcion Unauthorized 
         if not self.persistencia.verificar_usuario_en_archivo(username, password):
@@ -192,7 +185,6 @@ class Authentication(IceDrive.Authentication):
         """Check if the user belongs to this service.
         Don't check anything related to its authentication state or anything else."""
 
-        print("Verificar usuario")
 
         #Obtenemos el uuid del usuario
         uuid = user.ice_getIdentity().name

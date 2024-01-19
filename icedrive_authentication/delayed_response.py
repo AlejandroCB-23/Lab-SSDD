@@ -16,7 +16,6 @@ class AuthenticationQueryResponse(IceDrive.AuthenticationQueryResponse): #Respon
         "El servicio recibe la llamada al método “loginResponse” de esta interfaz con el proxy del usuario y comprueba que ese usuario este en el diccionario."
         "Si esta invoca una respuesta enviando el nombre de usuario y contraseña y adjunta un objeto User en caso de credenciales correctas o uno nulo en caso de incorrectas"
         
-        print("Login_response")
         self.future.set_result(user)
 
 
@@ -25,7 +24,6 @@ class AuthenticationQueryResponse(IceDrive.AuthenticationQueryResponse): #Respon
         """Receive an invocation when other service instance knows the user and removed it."""
         "El servicio recibe la llamada al método “userRemoved” de esta interfaz y elimina el usuario del diccionario"
 
-        print("User_removed_response")
         self.future.set_result(None)
         
 
@@ -33,14 +31,12 @@ class AuthenticationQueryResponse(IceDrive.AuthenticationQueryResponse): #Respon
         """Receive a boolean when other service instance is owner of the `user`."""
         "El servicio recibe la llamada al método “verifyUserResponse” de esta interfaz con el resultado de la verificación. Si el resultado es “True”, se enviará una llamada al método “userExists” de la interfaz AuthenticationQueryResponse con el proxy del usuario. Si el resultado es “False”, se enviará una llamada al método “userRemoved” de la interfaz AuthenticationQueryResponse."
 
-        print("Verify_user_response")
         self.future.set_result(result)
 
 
     def userExists(self, current: Ice.Current = None) -> None:
         """Receive an invocation when other service instance knows about the user."""
 
-        print("User_exists_response")
         self.future.set_result(None)
 
     
@@ -55,11 +51,10 @@ class AuthenticationQuery(IceDrive.AuthenticationQuery): #Para que otros me ayud
         """Receive a query about an user login."""
         "El servicio recibe la llamada al método “login” de esta interfaz con las credenciales de usuario. Si no son correctas, se ignorarán. Si el usuario existe, se enviará la respuesta a través del proxy de tipo AuthenticationQueryResponse recibido."
         
-        print("Login_query")
+   
         from .authentication import User #Para que no haya dependencias circulares
         
         if self.persistencia.verificar_usuario_en_archivo(username, password):
-            print("Esta en la persistencia y mandamos el response")
             response.loginResponse(IceDrive.UserPrx.uncheckedCast(current.adapter.addWithUUID(User(username, password))))
     
     
@@ -67,7 +62,6 @@ class AuthenticationQuery(IceDrive.AuthenticationQuery): #Para que otros me ayud
         """Receive a query about an user to be removed."""
         "El servicio recibe la llamada al método “removeUser” de esta interfaz con las credenciales de usuario. Si no son correctas, se ignorarán. Si el usuario existe, se enviará la respuesta a través del proxy de tipo AuthenticationQueryResponse recibido."
 
-        print("Remove_user_query")
         if self.persistencia.verificar_usuario_en_archivo(username, password):
             response.userRemoved()
             self.persistencia.eliminar_usuario_del_archivo(username, password)
@@ -80,7 +74,6 @@ class AuthenticationQuery(IceDrive.AuthenticationQuery): #Para que otros me ayud
         """Receive a query about an `User` to be verified."""
         "El servicio recibe la llamada al método “verifyUser” de esta interfaz con el proxy del usuario. Si el usuario existe, se enviará la respuesta a través del proxy de tipo AuthenticationQueryResponse recibido. Si el usuario no existe, se enviará la respuesta a través del proxy de tipo AuthenticationQueryResponse recibido."
 
-        print("Verify_user_query")
         from .authentication import User
         if self.persistencia.verificar_usuario_en_archivo(user.ice_getIdentity().name):
             response.verifyUserResponse(True)
@@ -90,7 +83,6 @@ class AuthenticationQuery(IceDrive.AuthenticationQuery): #Para que otros me ayud
     def doesUserExists(self, username: str, response: IceDrive.AuthenticationQueryResponsePrx, current: Ice.Current = None) -> None:
         """Receive a query about an `User` to be verified."""
 
-        print("Does_user_exists_query")
         if username in self.persistencia.verificar_usuario_en_archivo(username):
             response.userExists()
 
