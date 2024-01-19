@@ -13,13 +13,14 @@ class AdministracionPersistencia:
         with open(self.persistencia_usuarios, "a") as file:
             file.write(f"{username},{password}\n")
     
-    #Metodo utilizado para verificar si el usuario esta en el archivo de texto (Comprueba solo nombre o nombre y contraseña)
     def verificar_usuario_en_archivo(self, username: str, password: str = None) -> bool:
         """Verificar si el usuario existe en el archivo."""
         with open(self.persistencia_usuarios, "r") as fichero:
-            
             for linea in fichero:
-                
+                # Ignorar líneas en blanco
+                if not linea.strip():
+                    continue
+
                 # Dividir la línea en elementos
                 elementos = linea.strip().split(',')
 
@@ -32,7 +33,6 @@ class AdministracionPersistencia:
                     # Si se proporciona una contraseña, también verificamos la contraseña
                     if password is not None and len(elementos) > 1 and elementos[1] == password:
                         return True
-
 
         return False
     

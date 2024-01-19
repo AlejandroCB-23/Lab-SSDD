@@ -5,6 +5,7 @@ import threading
 import time
 import IceDrive
 from .administracion_persistencia import AdministracionPersistencia
+from .delayed_response import AuthenticationQueryResponse, AuthenticationQuery
 
 
 class User(IceDrive.User):
@@ -54,9 +55,10 @@ class User(IceDrive.User):
 class Authentication(IceDrive.Authentication):
     """Implementation of an IceDrive.Authentication interface."""
 
-    def __init__(self):
+    def __init__(self, query_pub: IceDrive.AuthenticationQueryPrx):
         self.persistencia = AdministracionPersistencia()
         self.diccionario_proxy = {}
+        self.query = query_pub 
 
 
     def login(
@@ -68,7 +70,22 @@ class Authentication(IceDrive.Authentication):
             
         # Verificar si el usuario existe en el archivo y validar la contraseña. En caso de que no este, lanzamos la excepcion Unauthorized
         if not self.persistencia.verificar_usuario_en_archivo(username, password):
-            raise IceDrive.Unauthorized
+            #Si no esta en la persistencia se consulta a los demas servicios, si en 5 segundos no nos contestan, se lanza la excepcion Unauthorized
+            #Le pasamos el usuario y la contraseña al delayed_response
+            
+            #Creamos el future
+            future = Ice.Future()
+            #Creamos el objeto de respuesta y la instancia de user
+            respuesta = AuthenticationQueryResponse(future)
+            #Creamos el proxy de respuesta
+            respuesta_proxy = IceDrive.AuthenticationQueryResponsePrx.uncheckedCast(current.adapter.add(respuesta, current.id))
+
+            #Enviamos la peticion a los demas servicios
+            self.query.login(username, password, respuesta_proxy)
+
+            threading.Timer(5, future.set_exception, [IceDrive.Unauthorized]).start()
+           
+            
 
         # Crear un nuevo proxy de usuario
         usuario = User(username, password)
@@ -96,11 +113,20 @@ class Authentication(IceDrive.Authentication):
                 #Se consulta la existencia del mismo a traves del topic, donde otras instancias del servicio pueden responder
                 #Si el usuario existe, se lanza la excepcion UserAlreadyExists
                 
+                #Creamos el future
+                future = Ice.Future()
+                #Creamos el objeto de respuesta y la instancia de user
+                respuesta = AuthenticationQueryResponse(future)
+                #Creamos el proxy de respuesta
+                respuesta_proxy = IceDrive.AuthenticationQueryResponsePrx.uncheckedCast(current.adapter.add(respuesta, current.id))
+
+                #Enviamos la peticion a los demas servicios
+                self.query.doUserExist(username, respuesta_proxy)
+
+                threading.Timer(5, future.set_exception, [IceDrive.UserAlreadyExists]).start()
 
                 
-                raise IceDrive.UserAlreadyExists
         
-
 
         #Creamos el usuario con el nombre y la contraseña
         usuario = User(username, password)
@@ -127,7 +153,19 @@ class Authentication(IceDrive.Authentication):
 
         #Verificamos que la contraseña y el nombre son correctos. Si no lo son lanzamos la excepcion Unauthorized 
         if not self.persistencia.verificar_usuario_en_archivo(username, password):
-            raise IceDrive.Unauthorized
+
+            #Creamos el future
+            future = Ice.Future()
+            #Creamos el objeto de respuesta y la instancia de user
+            respuesta = AuthenticationQueryResponse(future)
+            #Creamos el proxy de respuesta
+            respuesta_proxy = IceDrive.AuthenticationQueryResponsePrx.uncheckedCast(current.adapter.add(respuesta, current.id))
+
+            #Enviamos la peticion a los demas servicios
+            self.query.removeUser(username, password, respuesta_proxy)
+
+            threading.Timer(5, future.set_exception, [IceDrive.Unauthorized]).start()
+            
 
 
         try:
@@ -162,8 +200,21 @@ class Authentication(IceDrive.Authentication):
         #Obtenemos la identidad del usuario
         usuario_identidad = Ice.Identity(uuid, "")
 
-        #Obtenemos el objeto del usuario a traves del uuid
+        #Obtenemos el objeto del usuario a traves del uuid y si no esta preguntar al topic
         objeto_usuario = current.adapter.find(usuario_identidad)
+        if objeto_usuario is None:
+            #Creamos el future
+            future = Ice.Future()
+            #Creamos el objeto de respuesta y la instancia de user
+            respuesta = AuthenticationQueryResponse(future)
+            #Creamos el proxy de respuesta
+            respuesta_proxy = IceDrive.AuthenticationQueryResponsePrx.uncheckedCast(current.adapter.add(respuesta, current.id))
+
+            #Enviamos la peticion a los demas servicios
+            self.query.verifyUser(user, respuesta_proxy)
+
+            threading.Timer(5, future.set_exception, [IceDrive.UserNotExist]).start()
+
         
         # Devolver True si el objeto del usuario está presente, False en caso contrario
         return objeto_usuario is not None

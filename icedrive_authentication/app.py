@@ -14,6 +14,7 @@ import threading
 from .authentication import Authentication
 from .delayed_response import AuthenticationQuery, AuthenticationQueryResponse
 from .discovery import Discovery
+from .administracion_persistencia import AdministracionPersistencia
 
 class AuthenticationApp(Ice.Application):
     """Implementation of the Ice.Application for the Authentication service."""
@@ -61,12 +62,12 @@ class AuthenticationApp(Ice.Application):
         adapter.activate()
 
         servant = Discovery()
-        authentication_service = Authentication()
+        authentication_service = Authentication(query_pub)
         authentication_prx = IceDrive.AuthenticationPrx.checkedCast(adapter.addWithUUID(authentication_service))
 
         #Hacemos el query_servant y le pasamos la instancia del servicio
-        query_servant = AuthenticationQuery(authentication_service)
-
+        #query_servant = AuthenticationQuery(authentication_service)
+        query_servant = AuthenticationQuery(AdministracionPersistencia())
 
 
         servant_proxy = IceDrive.DiscoveryPrx.checkedCast(adapter.addWithUUID(servant))
